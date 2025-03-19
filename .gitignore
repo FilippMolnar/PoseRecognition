@@ -1,3 +1,6 @@
 skeleton_data_2d/
 skeleton_data_3d/
 blazepose/images/*
+*.csv
+*.pkl
+*.pt
