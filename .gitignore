@@ -4,3 +4,4 @@ blazepose/images/*
 *.csv
 *.pkl
 *.pt
+yolo_dataset/

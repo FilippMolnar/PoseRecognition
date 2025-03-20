@@ -9,7 +9,8 @@ from sklearn.model_selection import StratifiedKFold, train_test_split
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.metrics import accuracy_score, classification_report
 import pickle
-
+import shutil
+import yaml
 
 class Classifier:
     data = None
@@ -159,9 +160,91 @@ class Classifier:
 
         print("Final model trained and saved.")
 
+    def prepare_yolo_dataset(self, image_paths, labels, dataset_dir="yolo_dataset", test_size=0.2):
+        """
+        Prepares the dataset in the YOLO classification format.
+        
+        :param image_paths: List of image file paths.
+        :param labels: List of corresponding labels.
+        :param dataset_dir: Directory to store the YOLO-formatted dataset.
+        :param test_size: Proportion of the dataset to use for testing.
+        """
+        class_names = sorted(set(labels))  # Unique class names
+        class_to_idx = {cls: idx for idx, cls in enumerate(class_names)}
+        
+        train_dir = os.path.join(dataset_dir, "train")
+        val_dir = os.path.join(dataset_dir, "val")
+        os.makedirs(train_dir, exist_ok=True)
+        os.makedirs(val_dir, exist_ok=True)
+        
+        # Split dataset
+        train_paths, val_paths, train_labels, val_labels = train_test_split(
+            image_paths, labels, test_size=test_size, random_state=42, stratify=labels
+        )
+        
+        for img_path, label in zip(train_paths, train_labels):
+            class_folder = os.path.join(train_dir, label)
+            os.makedirs(class_folder, exist_ok=True)
+            shutil.copy(img_path, os.path.join(class_folder, os.path.basename(img_path)))
+        
+        for img_path, label in zip(val_paths, val_labels):
+            class_folder = os.path.join(val_dir, label)
+            os.makedirs(class_folder, exist_ok=True)
+            shutil.copy(img_path, os.path.join(class_folder, os.path.basename(img_path)))
+        
+        # Create dataset.yaml
+        yaml_data = {
+            "path": dataset_dir,
+            "train": "train",
+            "val": "val",
+            "names": {idx: name for name, idx in class_to_idx.items()}
+        }
+        
+        with open(os.path.join(dataset_dir, "dataset.yaml"), "w") as f:
+            yaml.dump(yaml_data, f, default_flow_style=False)
+        
+        print(f"Dataset prepared at {dataset_dir}")
+        return os.path.join(dataset_dir, "dataset.yaml")
+
+    def train_yolo_classifier(self, dataset_yaml, model_name="yolov8n-cls.pt", epochs=10):
+        """
+        Trains a YOLOv8 classifier using the prepared dataset.
+        
+        :param dataset_yaml: Path to the dataset.yaml file.
+        :param model_name: YOLOv8 classification model variant.
+        :param epochs: Number of training epochs.
+        """
+        model = YOLO(model_name)
+        model.train(data=dataset_yaml, epochs=epochs, device="cpu", batch=1, imgsz=640)
+        
+        print("Training completed.")
+        return model
+
+    def save_tuples_to_csv(self, data, filename):
+        with open(filename, 'w', newline='') as file:
+            writer = csv.writer(file)
+            writer.writerow(["path", "label"])
+            writer.writerows(data)
+
+    def load_tuples_from_csv(self, filename):
+        paths, labels = [], []
+        with open(filename, 'r') as file:
+            reader = csv.reader(file)
+            next(reader)  # Skip header
+            for row in reader:
+                paths.append(row[0])
+                labels.append(row[1])
+        return paths, labels
+
 if __name__ == '__main__':
     classifier = Classifier()
     # classifier.get_all_data("data")
     # classifier.filter_data()
+    # classifier.save_tuples_to_csv(classifier.filtered_data, "filtered_data.csv")
+    # image_paths, labels = classifier.load_tuples_from_csv("filtered_data.csv")
     # classifier.generate_3d_keypoints_csv("3d_keypoints.csv")
-    classifier.train_random_forest()
+    # classifier.train_random_forest(k=10)
+    
+    # dataset_yaml = classifier.prepare_yolo_dataset(image_paths, labels)
+    dataset_yaml = r'C:\\Users\\filip\\Desktop\\TUDelft\\ComputerVision\\PoseRecognition\\yolo_dataset'
+    trained_model = classifier.train_yolo_classifier(dataset_yaml, epochs=20)
