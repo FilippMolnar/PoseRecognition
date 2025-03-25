@@ -24,7 +24,7 @@ class_names = dataset.classes
 print("Class Names:", class_names)
 
 # Create DataLoader
-batch_size = 64
+batch_size = 32
 train_loader = DataLoader(dataset, batch_size=batch_size, shuffle=True)
 
 # Define split sizes (80% training, 20% testing)
@@ -40,22 +40,46 @@ test_loader = DataLoader(test_dataset, batch_size=batch_size, shuffle=False)
 
 print(f"Training Samples: {len(train_dataset)}, Testing Samples: {len(test_dataset)}")
 
-# Define CNN model
 class CNNModel(nn.Module):
     def __init__(self, num_classes):
         super(CNNModel, self).__init__()
+        
+        # Convolutional Layers
         self.conv1 = nn.Conv2d(3, 32, kernel_size=3, stride=1, padding=1)
+        self.bn1 = nn.BatchNorm2d(32)
+        
         self.conv2 = nn.Conv2d(32, 64, kernel_size=3, stride=1, padding=1)
+        self.bn2 = nn.BatchNorm2d(64)
+        
+        self.conv3 = nn.Conv2d(64, 128, kernel_size=3, stride=1, padding=1)
+        self.bn3 = nn.BatchNorm2d(128)
+        
+        self.conv4 = nn.Conv2d(128, 256, kernel_size=3, stride=1, padding=1)
+        self.bn4 = nn.BatchNorm2d(256)
+
         self.pool = nn.MaxPool2d(kernel_size=2, stride=2, padding=0)
-        self.fc1 = nn.Linear(64 * 56 * 56, 128) 
-        self.fc2 = nn.Linear(128, num_classes)
+        
+        # Fully Connected Layers
+        self.fc1 = nn.Linear(256 * 14 * 14, 512)  # Adjusted for input size
+        self.fc2 = nn.Linear(512, 256)
+        self.fc3 = nn.Linear(256, num_classes)
+
+        # Dropout for regularization
+        self.dropout = nn.Dropout(0.5)
 
     def forward(self, x):
-        x = self.pool(F.relu(self.conv1(x)))
-        x = self.pool(F.relu(self.conv2(x)))
-        x = x.view(x.size(0), -1)  
+        x = self.pool(F.relu(self.bn1(self.conv1(x))))
+        x = self.pool(F.relu(self.bn2(self.conv2(x))))
+        x = self.pool(F.relu(self.bn3(self.conv3(x))))
+        x = self.pool(F.relu(self.bn4(self.conv4(x))))
+
+        x = x.view(x.size(0), -1)  # Flatten
+
         x = F.relu(self.fc1(x))
-        x = self.fc2(x)  
+        x = self.dropout(x)
+        x = F.relu(self.fc2(x))
+        x = self.fc3(x)
+
         return x
 
 # Create model
@@ -74,7 +98,7 @@ model.to(device)
 criterion = nn.CrossEntropyLoss()
 optimizer = optim.Adam(model.parameters(), lr=0.001)
 
-num_epochs = 20
+num_epochs = 30
 
 for epoch in range(num_epochs):
     running_loss = 0.0
