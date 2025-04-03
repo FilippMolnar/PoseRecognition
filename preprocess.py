@@ -241,10 +241,10 @@ if __name__ == '__main__':
     # classifier.get_all_data("data")
     # classifier.filter_data()
     # classifier.save_tuples_to_csv(classifier.filtered_data, "filtered_data.csv")
-    # image_paths, labels = classifier.load_tuples_from_csv("filtered_data.csv")
+    image_paths, labels = classifier.load_tuples_from_csv("filtered_data.csv")
     # classifier.generate_3d_keypoints_csv("3d_keypoints.csv")
     # classifier.train_random_forest(k=10)
     
-    # dataset_yaml = classifier.prepare_yolo_dataset(image_paths, labels)
-    dataset_yaml = r'C:\\Users\\filip\\Desktop\\TUDelft\\ComputerVision\\PoseRecognition\\yolo_dataset'
+    dataset_yaml = classifier.prepare_yolo_dataset(image_paths, labels)
+    dataset_yaml = r'C:\\Users\\samko\\OneDrive\\Desktop\\Projects\\CV\\PoseRecognition\\yolo_dataset'
     trained_model = classifier.train_yolo_classifier(dataset_yaml, epochs=20)

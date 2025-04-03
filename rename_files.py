@@ -20,5 +20,5 @@ def rename_files(folder_path):
     print("Renaming complete.")
 
 # Usage example
-folder = "computer_vision_project/stag_leap"
+folder = "data/squat_new"
 rename_files(folder)

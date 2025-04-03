@@ -46,5 +46,5 @@ def find_duplicate_images(directory, threshold=5):
             print(f"Error deleting {duplicate}: {e}")
 
 if __name__ == "__main__":
-    directory = "data/stag_leap"
+    directory = "data/squat"
     find_duplicate_images(directory)
